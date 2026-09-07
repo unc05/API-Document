@@ -1,1 +1,62 @@
+/rides/validate:
+  post:
+    tags:
+      - Rides
+    summary: Validate ride information
+    description: |
+      Kiểm tra tính hợp lệ của điểm đi, điểm đến và loại xe
+      trước khi tạo yêu cầu đặt xe.
+
+      FR:
+        - FR-01.1 Nhập điểm đi
+        - FR-01.2 Nhập điểm đến
+        - FR-01.5 Kiểm tra thông tin đặt xe
+
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - pickupLocation
+              - destinationLocation
+              - vehicleType
+            properties:
+              pickupLocation:
+                $ref: '#/components/schemas/Location'
+
+              destinationLocation:
+                $ref: '#/components/schemas/Location'
+
+              vehicleType:
+                type: string
+                enum:
+                  - MOTORBIKE
+                  - CAR_4_SEATS
+                  - CAR_7_SEATS
+
+    responses:
+      '200':
+        description: Ride information is valid
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                valid:
+                  type: boolean
+                  example: true
+                estimatedFare:
+                  type: number
+                  example: 75000
+                estimatedDistanceKm:
+                  type: number
+                  example: 8.5
+                estimatedDurationMinutes:
+                  type: integer
+                  example: 25
+
+      '400':
+        description: Invalid ride information
 
