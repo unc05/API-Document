@@ -1,1 +1,512 @@
+openapi: 3.0.3
 
+info:
+  title: CABSYSTEM API
+  description: API Documentation for CABSYSTEM
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080
+    description: Local server
+
+tags:
+  - name: Rides
+    description: Ride booking operations
+  - name: Driver Assignment
+    description: Driver assignment operations
+
+paths:
+
+  # =========================================================
+  # BR-01 - ĐẶT XE TRỰC TUYẾN
+  # =========================================================
+
+  /rides/validate:
+    post:
+      tags:
+        - Rides
+      summary: Validate ride information
+      description: |
+        Kiểm tra tính hợp lệ của điểm đi, điểm đến và loại xe
+        trước khi tạo yêu cầu đặt xe.
+
+        FR:
+          - FR-01.1 Nhập điểm đi
+          - FR-01.2 Nhập điểm đến
+          - FR-01.3 Chọn loại xe
+          - FR-01.5 Kiểm tra thông tin đặt xe
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - pickupLocation
+                - destinationLocation
+                - vehicleType
+              properties:
+                pickupLocation:
+                  $ref: '#/components/schemas/Location'
+
+                destinationLocation:
+                  $ref: '#/components/schemas/Location'
+
+                vehicleType:
+                  type: string
+                  enum:
+                    - MOTORBIKE
+                    - CAR_4_SEATS
+                    - CAR_7_SEATS
+                  example: MOTORBIKE
+
+      responses:
+        '200':
+          description: Ride information is valid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid:
+                    type: boolean
+                    example: true
+                  estimatedFare:
+                    type: number
+                    example: 75000
+                  estimatedDistanceKm:
+                    type: number
+                    example: 8.5
+                  estimatedDurationMinutes:
+                    type: integer
+                    example: 25
+
+        '400':
+          description: Invalid ride information
+
+
+  /rides/estimate:
+    post:
+      tags:
+        - Rides
+      summary: Estimate ride fare
+      description: |
+        Tính toán giá cước, khoảng cách và thời gian di chuyển dự kiến.
+
+        FR:
+          - FR-01.1 Nhập điểm đi
+          - FR-01.2 Nhập điểm đến
+          - FR-01.3 Chọn loại xe
+          - FR-01.8 Xem giá cước dự kiến
+          - FR-01.9 Xem khoảng cách và thời gian dự kiến
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - pickupLocation
+                - destinationLocation
+                - vehicleType
+              properties:
+                pickupLocation:
+                  $ref: '#/components/schemas/Location'
+
+                destinationLocation:
+                  $ref: '#/components/schemas/Location'
+
+                vehicleType:
+                  type: string
+                  enum:
+                    - MOTORBIKE
+                    - CAR_4_SEATS
+                    - CAR_7_SEATS
+                  example: MOTORBIKE
+
+      responses:
+        '200':
+          description: Fare estimation calculated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  estimatedFare:
+                    type: number
+                    example: 75000
+                  estimatedDistanceKm:
+                    type: number
+                    example: 8.5
+                  estimatedDurationMinutes:
+                    type: integer
+                    example: 25
+
+        '400':
+          description: Invalid ride information
+
+
+  /rides:
+    post:
+      tags:
+        - Rides
+      summary: Create ride request
+      description: |
+        Tạo yêu cầu đặt xe với thông tin điểm đi, điểm đến và loại xe.
+
+        FR:
+          - FR-01.4 Tạo yêu cầu đặt xe
+          - FR-01.5 Kiểm tra thông tin đặt xe
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - pickupLocation
+                - destinationLocation
+                - vehicleType
+              properties:
+                pickupLocation:
+                  $ref: '#/components/schemas/Location'
+
+                destinationLocation:
+                  $ref: '#/components/schemas/Location'
+
+                vehicleType:
+                  type: string
+                  enum:
+                    - MOTORBIKE
+                    - CAR_4_SEATS
+                    - CAR_7_SEATS
+                  example: MOTORBIKE
+
+      responses:
+        '201':
+          description: Ride request created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ride'
+
+        '400':
+          description: Invalid ride information
+
+
+  /rides/{rideId}:
+    get:
+      tags:
+        - Rides
+      summary: Get ride status
+      description: |
+        Cho phép khách hàng xem trạng thái hiện tại của yêu cầu đặt xe.
+
+        FR:
+          - FR-01.6 Xem trạng thái yêu cầu
+
+      parameters:
+        - name: rideId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: RIDE-001
+
+      responses:
+        '200':
+          description: Ride status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ride'
+
+        '404':
+          description: Ride not found
+
+
+  /rides/{rideId}/cancel:
+    post:
+      tags:
+        - Rides
+      summary: Cancel ride request
+      description: |
+        Cho phép khách hàng hủy yêu cầu đặt xe theo chính sách
+        của doanh nghiệp.
+
+        FR:
+          - FR-01.7 Hủy yêu cầu đặt xe
+
+      parameters:
+        - name: rideId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: RIDE-001
+
+      responses:
+        '200':
+          description: Ride cancelled successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rideId:
+                    type: string
+                    example: RIDE-001
+                  status:
+                    type: string
+                    example: CANCELLED
+
+        '400':
+          description: Ride cannot be cancelled
+
+        '404':
+          description: Ride not found
+
+
+  # =========================================================
+  # BR-02 - TỰ ĐỘNG TÌM VÀ PHÂN CÔNG TÀI XẾ
+  # =========================================================
+
+  /rides/{rideId}/drivers/search:
+    get:
+      tags:
+        - Driver Assignment
+      summary: Find suitable drivers
+      description: |
+        Tìm kiếm và ưu tiên các tài xế phù hợp dựa trên vị trí,
+        trạng thái sẵn sàng và khoảng cách đến khách hàng.
+
+        FR:
+          - FR-02.1 Xác định tài xế phù hợp
+          - FR-02.2 Ưu tiên tài xế
+
+      parameters:
+        - name: rideId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: RIDE-001
+
+      responses:
+        '200':
+          description: Suitable drivers found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  drivers:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Driver'
+
+        '404':
+          description: No suitable driver found
+
+
+  /rides/{rideId}/drivers/notify:
+    post:
+      tags:
+        - Driver Assignment
+      summary: Send ride request to driver
+      description: |
+        Gửi thông tin chuyến đi đến tài xế được hệ thống lựa chọn.
+
+        FR:
+          - FR-02.3 Gửi yêu cầu đến tài xế
+
+      parameters:
+        - name: rideId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: RIDE-001
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - driverId
+              properties:
+                driverId:
+                  type: string
+                  example: DRIVER-001
+
+      responses:
+        '200':
+          description: Ride request sent to driver successfully
+
+        '404':
+          description: Driver or ride not found
+
+
+  /rides/{rideId}/accept:
+    post:
+      tags:
+        - Driver Assignment
+      summary: Accept ride request
+      description: |
+        Ghi nhận tài xế chấp nhận chuyến và cập nhật thông tin chuyến đi.
+
+        FR:
+          - FR-02.4 Xử lý tài xế chấp nhận
+
+      parameters:
+        - name: rideId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: RIDE-001
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - driverId
+              properties:
+                driverId:
+                  type: string
+                  example: DRIVER-001
+
+      responses:
+        '200':
+          description: Ride accepted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rideId:
+                    type: string
+                    example: RIDE-001
+                  driverId:
+                    type: string
+                    example: DRIVER-001
+                  status:
+                    type: string
+                    example: DRIVER_ASSIGNED
+
+        '400':
+          description: Ride is no longer available
+
+
+  # =========================================================
+  # COMPONENTS
+  # =========================================================
+
+components:
+
+  schemas:
+
+    Location:
+      type: object
+      required:
+        - latitude
+        - longitude
+      properties:
+        latitude:
+          type: number
+          format: double
+          example: 10.7769
+
+        longitude:
+          type: number
+          format: double
+          example: 106.7009
+
+        address:
+          type: string
+          example: "Bến Thành, Quận 1, TP.HCM"
+
+
+    Ride:
+      type: object
+      properties:
+        rideId:
+          type: string
+          example: RIDE-001
+
+        pickupLocation:
+          $ref: '#/components/schemas/Location'
+
+        destinationLocation:
+          $ref: '#/components/schemas/Location'
+
+        vehicleType:
+          type: string
+          enum:
+            - MOTORBIKE
+            - CAR_4_SEATS
+            - CAR_7_SEATS
+          example: MOTORBIKE
+
+        status:
+          type: string
+          enum:
+            - SEARCHING_DRIVER
+            - DRIVER_ASSIGNED
+            - DRIVER_ARRIVED
+            - IN_PROGRESS
+            - COMPLETED
+            - CANCELLED
+          example: SEARCHING_DRIVER
+
+        estimatedFare:
+          type: number
+          example: 75000
+
+        estimatedDistanceKm:
+          type: number
+          example: 8.5
+
+        estimatedDurationMinutes:
+          type: integer
+          example: 25
+
+
+    Driver:
+      type: object
+      properties:
+        driverId:
+          type: string
+          example: DRIVER-001
+
+        name:
+          type: string
+          example: Nguyen Van A
+
+        status:
+          type: string
+          enum:
+            - AVAILABLE
+            - BUSY
+            - OFFLINE
+          example: AVAILABLE
+
+        distanceKm:
+          type: number
+          example: 1.2
+
+        vehicleType:
+          type: string
+          enum:
+            - MOTORBIKE
+            - CAR_4_SEATS
+            - CAR_7_SEATS
+          example: MOTORBIKE
